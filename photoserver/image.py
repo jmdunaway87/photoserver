@@ -7,13 +7,27 @@ from . import secure
 from . import utils
 import os
 def get_image(self,user,type,id):
-    path= f"images/{user}/{type}/{id}.jpg"
+    path= f"images/{user}/{type}/{id}"
     content = None
     print(path)
-    with open(path, 'rb') as f:
-        print(f)
-        content = f.read()
-    return HttpResponse(content, content_type='image/jpg')
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    try:
+
+        file_extension = os.path.splitext(path)[1]
+
+        if(file_extension == '.jpg'):
+            content_type ='image/jpg'
+        elif file_extension =='.pdf':
+            content_type ='application/pdf'
+        else:
+            content_type = 'application/octet-stream'
+        with open(path, 'rb') as f:
+            print(f)
+            content = f.read()
+        return HttpResponse(content, content_type=content_type)
+    except:
+        return JsonResponse( {"authorized":False}, status=500)
+
 @csrf_exempt 
 def save_image(request,user,type,id):
     parts = decoder.MultipartDecoder(request.body, request.headers['content-type']).parts
@@ -25,11 +39,12 @@ def save_image(request,user,type,id):
         name = name[:name.index('"')]
 
         if '.jpg' in name:  
-             configs = utils.get_config()
-             path= f"images/{user}/{type}/{id}.jpg"
-             os.makedirs(os.path.dirname(path), exist_ok=True)
+            name = f"{id}.jpg"
+        configs = utils.get_config()
+        path= f"images/{user}/{type}/{name}"
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
-             with open(path, 'wb') as f:
-                 f.write(part.content)
-                 f.close()
+        with open(path, 'wb') as f:
+             f.write(part.content)
+             f.close()
     return JsonResponse( {"success":True}, status=200)
